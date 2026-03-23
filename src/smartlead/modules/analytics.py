@@ -1,4 +1,4 @@
-"""Campaign analytics & statistics endpoints (~8 endpoints)."""
+"""Campaign analytics & statistics endpoints (~9 endpoints)."""
 
 from __future__ import annotations
 
@@ -59,6 +59,10 @@ class AnalyticsModule:
         params = {"start_date": start_date, "end_date": end_date}
         data = await self._client.get(f"/campaigns/{campaign_id}/sequence-analytics", params=params)
         return SequenceAnalyticsResponse(**data)
+
+    async def get_variant_statistics(self, campaign_id: int) -> dict[str, Any]:
+        """GET /campaigns/{id}/variant-statistics"""
+        return await self._client.get(f"/campaigns/{campaign_id}/variant-statistics")
 
     async def get_warmup_stats(self, account_id: int) -> dict[str, Any]:
         """GET /email-accounts/{id}/warmup-stats"""

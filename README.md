@@ -1,18 +1,21 @@
-# smartlead-cli
+# smartlead-sdk
 
-Unofficial CLI and AI agent for the [Smartlead](https://smartlead.ai) API.
+Unofficial Python SDK and AI agent for the [Smartlead](https://smartlead.ai) cold email API.
 
-Manage your cold email campaigns, leads, and mailboxes from the terminal — or talk to them in plain English via a Claude-powered agent.
+170+ methods across 13 modules. Full async. Pydantic models. Built-in retries and rate limiting.
+
+> **Why a Python SDK when Smartlead has an official CLI?**
+> CLIs are for humans. SDKs are for agents. If you're building AI-powered campaign automation, you need structured Python objects - not CLI text output to regex through.
 
 ---
 
 ## Install
 
 ```bash
-pip install smartlead-cli
+pip install smartlead-sdk
 ```
 
-Requires Python 3.10+.
+Requires Python 3.9+.
 
 ## Configure
 
@@ -20,77 +23,103 @@ Requires Python 3.10+.
 export SMARTLEAD_API_KEY=your_api_key_here
 ```
 
-Copy `.env.example` to `.env` and fill in your keys if you prefer a dotenv workflow.
+Or copy `.env.example` to `.env` for a dotenv workflow.
 
 ---
 
-## CLI Usage
+## SDK
 
-### Campaigns
+Import and use directly in your scripts, agents, or automation pipelines.
 
-```bash
-# List all campaigns
-smartlead campaigns list
+```python
+from smartlead import SmartleadClient
 
-# Get campaign details
-smartlead campaigns get 42
+async with SmartleadClient(api_key="YOUR_KEY") as client:
 
-# Show sent/open/reply/bounce stats
-smartlead campaigns stats 42
+    # Check how a campaign is performing
+    stats = await client.analytics.get_statistics(campaign_id=3048174)
+    print(f"Sent: {stats.sent_count}, Replies: {stats.reply_count}, Bounces: {stats.bounce_count}")
 
-# Pause a campaign
-smartlead campaigns pause 42
+    # Pull all leads and filter by status
+    leads = await client.leads.list_by_campaign(3048174, limit=500)
+    unsent = [l for l in leads.data if l.lead_status == "STARTED"]
+    print(f"{len(unsent)} leads still waiting to send")
 
-# Start or resume a campaign
-smartlead campaigns start 42
+    # Update a lead's custom fields (e.g. swap email copy variant)
+    await client.leads.update(
+        campaign_id=3048174,
+        lead_id=lead.id,
+        email=lead.email,
+        custom_fields={"e1_variant": "A", "email_1": new_copy}
+    )
+
+    # Check which A/B variants are winning
+    variants = await client.analytics.get_variant_statistics(campaign_id=3048174)
+
+    # Monitor domain health across all sending domains
+    health = await client.global_analytics.mailbox_health_by_domain(
+        start_date="2026-03-01", end_date="2026-03-24"
+    )
+
+    # Add leads to a campaign with custom fields
+    await client.leads.add_to_campaign(3048174, leads=[
+        {
+            "email": "ceo@example.com",
+            "first_name": "Alex",
+            "last_name": "Chen",
+            "company_name": "Example Corp",
+            "custom_fields": {
+                "company_name_ai": "Example Corp",
+                "first_name_russian": "Алекс",
+                "country": "Georgia",
+                "email_1": "Your personalized first email here...",
+                "email_2": "Follow-up copy...",
+                "email_3": "Final follow-up..."
+            }
+        }
+    ])
+
+    # Run a deliverability test
+    test = await client.smart_delivery.create_manual_test(
+        sender_email="alex@yourdomain.com",
+        subject="Test email"
+    )
 ```
 
-### Leads
+### 13 Domain Modules
 
-```bash
-# List leads in a campaign
-smartlead leads list 42 --limit 50
+| Module | Methods | What it covers |
+|---|---|---|
+| `campaigns` | 9 | Create, update, delete, status, schedule, sequences, export, subsequences |
+| `leads` | 17 | Add, update, pause, resume, delete, unsubscribe, categories, message history, push, deactivate |
+| `email_accounts` | 16 | SMTP/IMAP create, OAuth (Google/Microsoft), warmup config, bulk delete, reconnect, tags, messages |
+| `sequences` | 2 | Get and save email sequences per campaign |
+| `analytics` | 9 | Campaign stats, date ranges, lead/mailbox/sequence/variant analytics, warmup stats |
+| `global_analytics` | 22 | Cross-campaign stats: daily, by sent time, positive replies, domain health, provider performance, team board, lead categories |
+| `webhooks` | 5 | List, create/update, delete, summary, retrigger failed |
+| `block_list` | 3 | Add, list, remove blocked emails/domains |
+| `clients` | 6 | Agency client management: create, list, API key CRUD |
+| `master_inbox` | 20 | Unified inbox: replies, snoozed, important, scheduled, archived, reply/forward, tasks, notes, team assignment, domain blocking |
+| `smart_delivery` | 28 | Deliverability testing: manual/automated tests, provider/geo/spam reports, SPF/DKIM/rDNS checks, IP/domain blacklists |
+| `smart_prospect` | 26 | Contact discovery: search, fetch, find emails, saved searches, filters (industry, headcount, revenue, location, job title) |
+| `smart_senders` | 7 | Domain ordering: search, purchase, OTP verification, vendor listing |
 
-# Add a lead
-smartlead leads add 42 john@acme.com --first-name John --last-name Doe --company Acme
+**Total: 170+ methods covering ~91% of Smartlead's API surface.**
 
-# Look up a lead by email
-smartlead leads get 42 john@acme.com
-```
+### Key Features
 
-### Email Accounts
-
-```bash
-# List all email accounts
-smartlead email-accounts list
-
-# Show warmup stats for an account
-smartlead email-accounts stats 7
-```
-
-### Analytics
-
-```bash
-# Account-wide day-wise overview
-smartlead analytics overview
-
-# Campaign-level analytics
-smartlead analytics campaign 42
-```
-
-### JSON output
-
-Every command accepts `--output json` for raw JSON:
-
-```bash
-smartlead campaigns stats 42 --output json
-```
+- **Full async** - built on `httpx.AsyncClient`
+- **Pydantic v2 models** - typed request/response objects for every endpoint
+- **Auto-retry** - exponential backoff on 5xx and 429 (rate limit) errors
+- **Sliding-window rate limiter** - stays within API limits automatically
+- **Structured errors** - `SmartleadAuthError`, `SmartleadNotFoundError`, `SmartleadRateLimitError`, `SmartleadValidationError`, `SmartleadServerError`
+- **Dual API support** - main API + Smart Delivery API (separate base URL) handled transparently
 
 ---
 
 ## AI Agent
 
-The agent lets you manage Smartlead in plain English via a Claude-powered conversational interface.
+A conversational Claude-powered agent that manages Smartlead via natural language.
 
 ```bash
 export SMARTLEAD_API_KEY=your_key
@@ -100,39 +129,44 @@ cd agent
 python agent.py
 ```
 
-Example session:
+Ask it anything:
 
-```
-You: How many replies did we get this week?
-Assistant: You received 47 replies across all campaigns this week...
+- "What's the reply rate on campaign 3048174?"
+- "Which domains have bounce rates over 3%?"
+- "Pause all campaigns under client Garna"
+- "Show me positive replies from the last 3 days"
+- "Add these leads to the property management campaign"
 
-You: Pause campaign 42
-  [calling pause_campaign...]
-Assistant: Campaign 42 has been paused.
+The agent ships with 7 starter tools, but the SDK has 170+ methods you can wire up. See [agent/README.md](agent/README.md) for the full list and how to add more.
 
-You: Add sarah@startupco.com to campaign 17
-  [calling add_lead...]
-Assistant: Sarah has been added to campaign 17.
-```
+### Why SDK + Agent > CLI for automation
 
-See [agent/README.md](agent/README.md) for full setup and usage details.
+If you're building AI agents that manage cold email campaigns, the SDK gives you:
+
+1. **Direct Python imports** - no subprocess calls or shell output parsing
+2. **Structured data** - agents work with Python objects, not text blobs
+3. **Chained operations** - analyze variants, detect winners, update leads in one flow
+4. **Built-in error handling** - agents recover from failures instead of crashing on exit codes
+5. **Composability** - combine with pandas, anthropic SDK, or any Python library
+6. **Agent template included** - working example of a Claude-powered campaign manager
 
 ---
 
-## SDK
+## Project Structure
 
-The underlying Python SDK is importable directly:
-
-```python
-from smartlead import SmartleadClient
-
-async with SmartleadClient(api_key="YOUR_KEY") as client:
-    campaigns = await client.global_analytics.campaign_list()
-    stats = await client.analytics.get_statistics(campaign_id=42)
-    await client.leads.add_to_campaign(42, leads=[{"email": "jane@co.com"}])
 ```
-
-13 domain modules: `campaigns`, `leads`, `email_accounts`, `sequences`, `analytics`, `global_analytics`, `webhooks`, `block_list`, `clients`, `master_inbox`, `smart_delivery`, `smart_senders`, `smart_prospect`.
+smartlead-sdk/
+  src/smartlead/          # Python SDK
+    _base_client.py       # HTTP client, retries, rate limiting
+    _client.py            # SmartleadClient (composes all modules)
+    _config.py            # Configuration
+    _errors.py            # Error hierarchy
+    models/               # Pydantic request/response models (14 files)
+    modules/              # API modules (13 domain modules)
+  agent/                  # Claude AI agent
+    agent.py              # Agentic loop
+    tools.py              # Tool definitions for Claude
+```
 
 ---
 
@@ -140,13 +174,17 @@ async with SmartleadClient(api_key="YOUR_KEY") as client:
 
 1. Fork the repo
 2. Create a branch (`git checkout -b feature/my-feature`)
-3. Make your changes and add tests if applicable
+3. Make your changes
 4. Open a pull request
 
-This is an unofficial project — PRs, bug reports, and feature requests are welcome.
+Bug reports and feature requests welcome.
 
 ---
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+Built by [Alchemail](https://alchemail.io).

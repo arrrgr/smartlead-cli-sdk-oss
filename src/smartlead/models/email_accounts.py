@@ -123,3 +123,21 @@ class FetchMessagesRequest(BaseModel):
     includeBody: bool = False
     from_time: Optional[str] = None
     to_time: Optional[str] = None
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
+
+
+class SaveOAuthEmailAccountRequest(BaseModel):
+    from_name: Optional[str] = None
+    from_email: Optional[str] = None
+    oauth_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    provider: Optional[str] = None
+    client_id: Optional[int] = None
+    max_email_per_day: Optional[int] = None
+    warmup_enabled: Optional[bool] = None
+    total_warmup_per_day: Optional[int] = None
+    daily_rampup: Optional[int] = None
+    reply_rate_percentage: Optional[int] = None

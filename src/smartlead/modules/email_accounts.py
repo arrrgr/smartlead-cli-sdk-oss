@@ -1,4 +1,4 @@
-"""Email account management endpoints (~11 endpoints)."""
+"""Email account management endpoints (~16 endpoints)."""
 
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ from ..models.email_accounts import (
     UpdateWarmupRequest,
     WarmupStatsResponse,
     FetchMessagesRequest,
+    BulkDeleteRequest,
+    SaveOAuthEmailAccountRequest,
 )
 
 
@@ -119,3 +121,25 @@ class EmailAccountsModule:
         if "to_time" in payload:
             payload["to"] = payload.pop("to_time")
         return await self._client.post(f"/email-accounts/{account_id}/fetch-messages", json=payload)
+
+    async def delete(self, account_id: int) -> dict[str, Any]:
+        """DELETE /email-accounts/{id}"""
+        return await self._client.delete(f"/email-accounts/{account_id}")
+
+    async def bulk_delete(self, account_ids: list[int]) -> dict[str, Any]:
+        """POST /email-accounts/bulk-delete"""
+        body = BulkDeleteRequest(ids=account_ids)
+        return await self._client.post("/email-accounts/bulk-delete", json=body.model_dump())
+
+    async def save_oauth_email_account(self, **kwargs: Any) -> dict[str, Any]:
+        """POST /email-accounts/save-oauth"""
+        body = SaveOAuthEmailAccountRequest(**kwargs)
+        return await self._client.post("/email-accounts/save-oauth", json=body.model_dump(exclude_none=True))
+
+    async def disconnect_google(self, account_id: int) -> dict[str, Any]:
+        """POST /email-accounts/{id}/disconnect-google"""
+        return await self._client.post(f"/email-accounts/{account_id}/disconnect-google", json={})
+
+    async def disconnect_microsoft(self, account_id: int) -> dict[str, Any]:
+        """POST /email-accounts/{id}/disconnect-microsoft"""
+        return await self._client.post(f"/email-accounts/{account_id}/disconnect-microsoft", json={})

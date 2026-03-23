@@ -29,12 +29,25 @@ from smartlead import SmartleadClient, SmartleadError
 from tools import TOOLS
 
 MODEL = "claude-opus-4-6"
-SYSTEM_PROMPT = (
-    "You are a Smartlead assistant. Use the available tools to help manage "
-    "campaigns, leads, and email accounts. When the user asks for information "
-    "or to take an action, call the appropriate tool and summarise the result "
-    "in plain English. Be concise and direct."
-)
+SYSTEM_PROMPT = """\
+You are a Smartlead assistant with full access to the Smartlead API. You can manage:
+
+- Campaigns: create, update, delete, change status (start/pause/stop), update schedules and settings, create subsequences, export data
+- Leads: add to campaigns, list, update, categorize, pause/resume, delete, unsubscribe, view message history, move between lists
+- Email accounts: create (SMTP/IMAP and OAuth), list, update, delete, manage warmup, add/remove from campaigns, fetch messages, reconnect failed accounts
+- Sequences: get and save email sequences with A/B variants
+- Analytics: campaign statistics, date-range analytics, lead/mailbox/sequence/variant stats, warmup stats
+- Global analytics: account-wide daily stats, positive replies, mailbox health by domain/name/provider, team board, lead stats, campaign response/status stats
+- Webhooks: create, list, delete, get summaries, retrigger failed events
+- Block list: add, list, delete blocked domains/emails
+- Clients: create, list, manage API keys (for agency accounts)
+- Master inbox: get replies, reply to leads, forward emails, update categories/revenue, manage tasks/notes/reminders, assign team members, block domains, resume leads
+- Smart Delivery: inbox placement testing (manual and automated), SPF/DKIM/rDNS reports, blacklist checks, folder management
+- Smart Senders: domain search and ordering, mailbox generation, vendor listing
+- Smart Prospect: contact discovery, search with filters (industry, location, headcount, job title, etc.), email finding, saved searches
+
+When the user asks for information or to take an action, call the appropriate tool and summarize the result in plain English. Be concise and direct. Never use em dashes.\
+"""
 
 
 def get_env(name: str) -> str:
@@ -46,51 +59,38 @@ def get_env(name: str) -> str:
 
 
 def execute_tool(client: SmartleadClient, tool_name: str, tool_input: dict) -> str:
-    """Execute a tool call and return the result as a JSON string."""
+    """Execute any tool by routing to the correct SDK module and method.
+
+    Tool names use the convention: module__method (double underscore).
+    The module name matches the attribute name on SmartleadClient.
+    """
 
     async def _run():
-        if tool_name == "list_campaigns":
-            data = await client.global_analytics.campaign_list(limit=200)
-            return data
+        parts = tool_name.split("__", 1)
+        if len(parts) != 2:
+            return {"error": f"Invalid tool name format: {tool_name}. Expected module__method."}
 
-        elif tool_name == "get_campaign_stats":
-            stats = await client.analytics.get_statistics(tool_input["campaign_id"])
-            return stats.model_dump()
+        module_name, method_name = parts
 
-        elif tool_name == "list_leads":
-            limit = tool_input.get("limit", 100)
-            result = await client.leads.list_by_campaign(
-                tool_input["campaign_id"], limit=limit
-            )
+        module = getattr(client, module_name, None)
+        if module is None:
+            return {"error": f"Unknown module: {module_name}"}
+
+        method = getattr(module, method_name, None)
+        if method is None:
+            return {"error": f"Unknown method: {method_name} on {module_name}"}
+
+        result = await method(**tool_input)
+
+        # Handle different return types
+        if hasattr(result, "model_dump"):
             return result.model_dump()
-
-        elif tool_name == "add_lead":
-            lead_data = {"email": tool_input["email"]}
-            if "first_name" in tool_input:
-                lead_data["first_name"] = tool_input["first_name"]
-            if "last_name" in tool_input:
-                lead_data["last_name"] = tool_input["last_name"]
-            if "company" in tool_input:
-                lead_data["company_name"] = tool_input["company"]
-            result = await client.leads.add_to_campaign(
-                tool_input["campaign_id"], leads=[lead_data]
-            )
-            return result.model_dump()
-
-        elif tool_name == "pause_campaign":
-            result = await client.campaigns.update_status(tool_input["campaign_id"], "PAUSED")
-            return result
-
-        elif tool_name == "start_campaign":
-            result = await client.campaigns.update_status(tool_input["campaign_id"], "START")
-            return result
-
-        elif tool_name == "get_analytics_overview":
-            data = await client.global_analytics.daily_stats()
-            return data
-
-        else:
-            return {"error": f"Unknown tool: {tool_name}"}
+        if isinstance(result, list):
+            return [
+                item.model_dump() if hasattr(item, "model_dump") else item
+                for item in result
+            ]
+        return result
 
     try:
         result = asyncio.run(_run())
@@ -112,6 +112,7 @@ def run_agent():
     messages: list[dict] = []
 
     print("Smartlead Agent (powered by Claude)")
+    print(f"Loaded {len(TOOLS)} tools across 13 modules.")
     print("Type your question or instruction. Press Ctrl+C to exit.\n")
 
     try:

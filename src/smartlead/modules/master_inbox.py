@@ -1,4 +1,4 @@
-"""Master inbox endpoints (~17 endpoints)."""
+"""Master inbox endpoints (~20 endpoints)."""
 
 from __future__ import annotations
 
@@ -17,6 +17,9 @@ from ..models.master_inbox import (
     CreateTaskRequest,
     CreateNoteRequest,
     PushToSubsequenceRequest,
+    AssignTeamMemberRequest,
+    BlockDomainsRequest,
+    ResumeLeadRequest,
 )
 
 
@@ -125,3 +128,18 @@ class MasterInboxModule:
         """POST /master-inbox/push-to-subsequence"""
         body = PushToSubsequenceRequest(email_lead_map_id=email_lead_map_id, sub_sequence_id=subsequence_id)
         return await self._client.post("/master-inbox/push-to-subsequence", json=body.model_dump(exclude_none=True))
+
+    async def assign_team_member(self, email_lead_map_id: int, team_member_id: int) -> dict[str, Any]:
+        """POST /master-inbox/update-team-member"""
+        body = AssignTeamMemberRequest(email_lead_map_id=email_lead_map_id, team_member_id=team_member_id)
+        return await self._client.post("/master-inbox/update-team-member", json=body.model_dump())
+
+    async def block_domains(self, domains: list[str]) -> dict[str, Any]:
+        """POST /master-inbox/block-domains"""
+        body = BlockDomainsRequest(domains=domains)
+        return await self._client.post("/master-inbox/block-domains", json=body.model_dump())
+
+    async def resume_lead(self, email_lead_map_id: int) -> dict[str, Any]:
+        """PATCH /master-inbox/resume-lead"""
+        body = ResumeLeadRequest(email_lead_map_id=email_lead_map_id)
+        return await self._client.patch("/master-inbox/resume-lead", json=body.model_dump())

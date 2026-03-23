@@ -63,3 +63,16 @@ class CreateNoteRequest(BaseModel):
 class PushToSubsequenceRequest(BaseModel):
     email_lead_map_id: Optional[int] = None
     sub_sequence_id: Optional[int] = None
+
+
+class AssignTeamMemberRequest(BaseModel):
+    email_lead_map_id: int
+    team_member_id: int
+
+
+class BlockDomainsRequest(BaseModel):
+    domains: list[str]
+
+
+class ResumeLeadRequest(BaseModel):
+    email_lead_map_id: int
