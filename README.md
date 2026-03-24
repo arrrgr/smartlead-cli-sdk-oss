@@ -133,11 +133,9 @@ Ask it anything:
 
 - "What's the reply rate on campaign 3048174?"
 - "Which domains have bounce rates over 3%?"
-- "Pause all campaigns under client Garna"
-- "Show me positive replies from the last 3 days"
-- "Add these leads to the property management campaign"
-
-The agent ships with 7 starter tools, but the SDK has 170+ methods you can wire up. See [agent/README.md](agent/README.md) for the full list and how to add more.
+- "Pause all campaigns currently active under client Acme"
+- "Show me positive replies from the last 3 days for the Enron campaign. I want a csv with all lead data + entire message history "
+- "Add these leads to the property management campaign we pushed live earlier today"
 
 ### Why SDK + Agent > CLI for automation
 
@@ -187,4 +185,4 @@ MIT. See [LICENSE](LICENSE).
 
 ---
 
-Built by [Alchemail](https://alchemail.io).
+Built by [Arthur Grishkevich](https://www.linkedin.com/in/arthurgrishkevich/) [Alchemail](https://alchemail.io).
