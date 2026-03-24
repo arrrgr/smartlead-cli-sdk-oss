@@ -4,8 +4,23 @@ Unofficial Python SDK and AI agent for the [Smartlead](https://smartlead.ai) col
 
 170+ methods across 13 modules. Full async. Pydantic models. Built-in retries and rate limiting.
 
-> **Why a Python SDK when Smartlead has an official CLI?**
-> CLIs are for humans. SDKs are for agents. If you're building AI-powered campaign automation, you need structured Python objects - not CLI text output to regex through.
+### What is an SDK?
+
+An SDK (Software Development Kit) is a library your code imports directly. Instead of running terminal commands and reading text output, your Python scripts call methods like `client.leads.add_to_campaign()` and get structured data back. It's the difference between typing commands manually and having your code talk to an API natively.
+
+### Why a Python SDK when Smartlead has an official CLI?
+
+Smartlead's official CLI (`npm install -g @smartlead/cli`) is great. 130+ commands, clean output, works well for manual operations in the terminal. If you need to quickly check campaign stats or pause a send, use it.
+
+But CLIs and SDKs solve different problems. A CLI is designed for a human typing commands. An SDK is designed for code calling code. When you're building AI agents or automation pipelines that manage campaigns programmatically, the difference matters:
+
+- **No parsing** - SDK methods return Python objects. No subprocess calls, no capturing stdout, no regex on text output.
+- **Chaining** - An agent can pull analytics, detect winning variants, and update 200 leads in a single async flow. With a CLI, that's three shell commands with string wrangling between each one.
+- **Error recovery** - The SDK has built-in retries with exponential backoff on rate limits and server errors. Your agent handles failures gracefully instead of dying on a non-zero exit code.
+- **Type safety** - Pydantic v2 models validate every request and response. Your agent knows exactly what fields exist before it sends anything.
+- **Composability** - Import the SDK alongside pandas, the anthropic SDK, or any Python library. Build pipelines that go from data analysis to API calls without leaving Python.
+
+We built this SDK before Smartlead released their CLI, and it covers modules their CLI doesn't expose yet (Smart Delivery: 28 methods, Smart Senders: 7 methods). The two tools complement each other - use the CLI for quick manual checks, use the SDK for anything programmatic or agentic.
 
 ---
 
@@ -100,9 +115,9 @@ async with SmartleadClient(api_key="YOUR_KEY") as client:
 | `block_list` | 3 | Add, list, remove blocked emails/domains |
 | `clients` | 6 | Agency client management: create, list, API key CRUD |
 | `master_inbox` | 20 | Unified inbox: replies, snoozed, important, scheduled, archived, reply/forward, tasks, notes, team assignment, domain blocking |
-| `smart_delivery` | 28 | Deliverability testing: manual/automated tests, provider/geo/spam reports, SPF/DKIM/rDNS checks, IP/domain blacklists |
+| `smart_delivery` | **28** | **Not in Smartlead CLI.** Deliverability testing: manual/automated tests, provider/geo/spam reports, SPF/DKIM/rDNS checks, IP/domain blacklists |
 | `smart_prospect` | 26 | Contact discovery: search, fetch, find emails, saved searches, filters (industry, headcount, revenue, location, job title) |
-| `smart_senders` | 7 | Domain ordering: search, purchase, OTP verification, vendor listing |
+| `smart_senders` | **7** | **Not in Smartlead CLI.** Domain ordering: search, purchase, OTP verification, vendor listing |
 
 **Total: 170+ methods covering ~91% of Smartlead's API surface.**
 
@@ -136,6 +151,8 @@ Ask it anything:
 - "Pause all campaigns currently active under client Acme"
 - "Show me positive replies from the last 3 days for the Enron campaign. I want a csv with all lead data + entire message history "
 - "Add these leads to the property management campaign we pushed live earlier today"
+
+The agent has all 170+ SDK methods wired as tools out of the box. See [SKILLS.md](SKILLS.md) for the full reference, or [agent/README.md](agent/README.md) for how it works.
 
 ### Why SDK + Agent > CLI for automation
 
