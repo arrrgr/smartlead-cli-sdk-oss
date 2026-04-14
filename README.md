@@ -10,7 +10,7 @@ An SDK (Software Development Kit) is a library your code imports directly. Inste
 
 ### Why a Python SDK when Smartlead has an official CLI?
 
-Smartlead's official CLI (`npm install -g @smartlead/cli`) is great. 130+ commands, clean output, works well for manual operations in the terminal. If you need to quickly check campaign stats or pause a send, use it.
+Smartlead's official CLI (`npm install -g @smartlead/cli`) is great. Clean output, works well for manual operations in the terminal. If you need to quickly check campaign stats or pause a send, use it.
 
 But CLIs and SDKs solve different problems. A CLI is designed for a human typing commands. An SDK is designed for code calling code. When you're building AI agents or automation pipelines that manage campaigns programmatically, the difference matters:
 
